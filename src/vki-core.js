@@ -78,6 +78,8 @@ var VKI = function(customConfig, layout, deadKeys, keyInputCallback) {
   this.VKI_forcePosition = config.forcePosition || false;
   this.VKI_relative = config.relative === false ? false : true;
   this.VKI_customClass = config.customClass || false;
+  this.VKI_attachToInput = config.attachToInput || true;
+  this.VKI_injectAt = config.injectAt || 'body';
 
   this.VKI_isIE = /*@cc_on!@*/false;
   this.VKI_isIE6 = /*@if(@_jscript_version == 5.6)!@end@*/false;
@@ -188,6 +190,7 @@ var VKI = function(customConfig, layout, deadKeys, keyInputCallback) {
    *
    */
   self.attachVki = function(elem) {
+    console.log(elem)
     if (elem.getAttribute("VKI_attached")) return false;
     if (self.VKI_imageURI) {
       var keybut = document.createElement('img');
@@ -233,6 +236,55 @@ var VKI = function(customConfig, layout, deadKeys, keyInputCallback) {
 
     // Attach close event handler.
     angular.element(elem).bind('VKI_close', function(){self.VKI_close(false);});
+  };
+
+  self.insertVki = function(elem) {
+    // if (elem.getAttribute("VKI_attached")) return false;
+    self.VKI_show(elem);
+    // if (self.VKI_imageURI) {
+    //   var keybut = document.createElement('img');
+    //       keybut.src = self.VKI_imageURI;
+    //       keybut.alt = self.VKI_i18n['01'];
+    //       keybut.className = "keyboardInputInitiator";
+    //       keybut.title = self.VKI_i18n['01'];
+    //       keybut.elem = elem;
+    //       keybut.onclick = function(e) {
+    //         e = e || event;
+    //         if (e.stopPropagation) { e.stopPropagation(); } else e.cancelBubble = true;
+    //         self.VKI_show(this.elem);
+    //       };
+    //   elem.parentNode.insertBefore(keybut, (elem.dir == "rtl") ? elem : elem.nextSibling);
+    // } else {
+    //   elem.onfocus = function() {
+    //     if (self.VKI_target != this) {
+    //       if (self.VKI_target) self.VKI_close(false);
+    //
+    //     }
+    //   };
+    //   elem.onclick = function() {
+    //     if (!self.VKI_target) self.VKI_show(this);
+    //   }
+    // }
+    // elem.setAttribute("VKI_attached", 'true');
+    // if (self.VKI_isIE) {
+    //   elem.onclick = elem.onselect = elem.onkeyup = function(e) {
+    //     if ((e || event).type != "keyup" || !this.readOnly)
+    //       this.range = document.selection.createRange();
+    //   };
+    // }
+    // VKI_addListener(elem, 'click', function(e) {
+    //   if (self.VKI_target == this) {
+    //     e = e || event;
+    //     if (e.stopPropagation) { e.stopPropagation(); } else e.cancelBubble = true;
+    //   } return false;
+    // }, false);
+    // if (self.VKI_isMoz)
+    //   elem.addEventListener('blur', function() { this.setAttribute('_scrollTop', this.scrollTop); }, false);
+    //
+    // VKI_addListener(document.documentElement, 'click', function(e) { self.VKI_close(false); }, false);
+    //
+    // // Attach close event handler.
+    // angular.element(elem).bind('VKI_close', function(){self.VKI_close(false);});
   };
 
 
@@ -776,45 +828,56 @@ var VKI = function(customConfig, layout, deadKeys, keyInputCallback) {
    *
    */
   this.VKI_show = function(elem) {
+
+
     if (!this.VKI_target) {
       this.VKI_target = elem;
+
       if (this.VKI_langAdapt && this.VKI_target.lang) {
         var chg = false, sub = [], lang = this.VKI_target.lang.toLowerCase().replace(/-/g, "_");
         for (var x = 0, chg = false; !chg && x < this.VKI_langCode.index.length; x++)
           if (lang.indexOf(this.VKI_langCode.index[x]) == 0 && self.VKI_showKbSelect)
             chg = kbSelect.firstChild.nodeValue = this.VKI_kt = this.VKI_langCode[this.VKI_langCode.index[x]];
         if (chg) this.VKI_buildKeys();
+
       }
+
       if (this.VKI_isIE) {
         if (!this.VKI_target.range) {
           this.VKI_target.range = this.VKI_target.createTextRange();
           this.VKI_target.range.moveStart('character', this.VKI_target.value.length);
         } this.VKI_target.range.select();
       }
-      try { this.VKI_keyboard.parentNode.removeChild(this.VKI_keyboard); } catch (e) {}
+
+      // try { this.VKI_keyboard.parentNode.removeChild(this.VKI_keyboard); } catch (e) {}
       if (this.VKI_clearPasswords && this.VKI_target.type == "password") this.VKI_target.value = "";
 
       var elem = this.VKI_target;
-      this.VKI_target.keyboardPosition = "absolute";
-      do {
-        if (VKI_getStyle(elem, "position") == "fixed") {
-          this.VKI_target.keyboardPosition = "fixed";
-          break;
-        }
-      } while (elem = elem.offsetParent);
+      // this.VKI_target.keyboardPosition = "absolute";
+      // do {
+      //   if (VKI_getStyle(elem, "position") == "fixed") {
+      //     this.VKI_target.keyboardPosition = "fixed";
+      //     break;
+      //   }
+      // } while (elem = elem.offsetParent);
 
-      if (this.VKI_isIE6) document.body.appendChild(this.VKI_iframe);
-      document.body.appendChild(this.VKI_keyboard);
-      this.VKI_keyboard.style.position = this.VKI_target.keyboardPosition;
-      if (this.VKI_isOpera) this.VKI_keyboard.reflow();
+      var el = document.querySelector(this.VKI_injectAt) || this.VKI_target
+      
+      if (this.VKI_isIE6) el.appendChild(this.VKI_iframe);
 
-      this.VKI_position(true);
-      if (self.VKI_isMoz || self.VKI_isWebKit) this.VKI_position(true);
-      this.VKI_target.blur();
-      this.VKI_target.focus();
+      el.appendChild(this.VKI_keyboard);
 
-      this.VKI_closeOthers();
+      // this.VKI_keyboard.style.position = this.VKI_target.keyboardPosition;
+      // if (this.VKI_isOpera) this.VKI_keyboard.reflow();
+      //
+      // this.VKI_position(true);
+      // if (self.VKI_isMoz || self.VKI_isWebKit) this.VKI_position(true);
+      // this.VKI_target.blur();
+      // this.VKI_target.focus();
+      //
+      // this.VKI_closeOthers();
     } else this.VKI_close(false);
+
   };
 
   /* ****************************************************************
